@@ -752,6 +752,32 @@ def view_logs():
     """
     return logs_html
 
+@app.route('/debug')
+def debug():
+    """Debug endpoint to check configuration"""
+    debug_info = {
+        'twilio_configured': bool(TWILIO_ACCOUNT_SID),
+        'twilio_sid_prefix': TWILIO_ACCOUNT_SID[:6] if TWILIO_ACCOUNT_SID else 'Not set',
+        'twilio_number': TWILIO_PHONE_NUMBER if TWILIO_PHONE_NUMBER else 'Not set',
+        'sheets_configured': bool(GOOGLE_SHEETS_CREDS),
+        'spreadsheet_id': SPREADSHEET_ID if SPREADSHEET_ID else 'Not set',
+        'creds_length': len(GOOGLE_SHEETS_CREDS) if GOOGLE_SHEETS_CREDS else 0
+    }
+    
+    # Try to connect to sheets
+    try:
+        worksheet = get_google_sheet()
+        if worksheet:
+            debug_info['sheets_connection'] = 'SUCCESS'
+            debug_info['sheet_name'] = worksheet.title
+            debug_info['row_count'] = worksheet.row_count
+        else:
+            debug_info['sheets_connection'] = 'FAILED - Could not get worksheet'
+    except Exception as e:
+        debug_info['sheets_connection'] = f'ERROR: {str(e)}'
+    
+    return jsonify(debug_info)
+
 @app.route('/api/logs')
 def get_logs():
     """Get call logs from Google Sheets"""
